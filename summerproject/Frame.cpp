@@ -11,6 +11,7 @@ void Frame::setimg(cv::Mat&img)
 }
 void Frame::readimg(char*file)
 {
+	cout << file << endl;
 	color_img = cv::imread(file);
 	std::cout << file << endl;
 	width = color_img.cols;

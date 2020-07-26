@@ -10,8 +10,8 @@ using namespace std;
 
 
 int img_width, img_height;
-double delta = 0.3;
-int k = 5;
+double delta = 0.0001;
+int k = 10;
 
 int src(int x, int y, int label)
 {
@@ -74,7 +74,7 @@ void init(Frame*frames)
 		Frame *frame = &frames[i];
 		double ux = 1;
 		for (int d = 1; d <= k; d++) {
-			for (int j = 1; j < 10; j++) {
+			for (int j = 1; j < 5; j++) {
 				Frame *framet = &frames[j];
 				cv::Mat w_c0, w_c1, w_c2, w_c3;
 				float x0, y0, x1, y1, x2, y2, x3, y3, tmpd;
@@ -86,7 +86,7 @@ void init(Frame*frames)
 				framet->GetImgCoordFrmWorldCoord(x1, y1, tmpd, w_c1);
 				framet->GetImgCoordFrmWorldCoord(x2, y2, tmpd, w_c2);
 				framet->GetImgCoordFrmWorldCoord(x3, y3, tmpd, w_c3);
-				//cout << x0 << " " << y0 << " \n" << x1 << " " << y1 << "\n" << x2 << " " << y2 <<"\n"<< x3 << " " << y3 << endl;
+				cout << x0 << " " << y0 << " \n" << x1 << " " << y1 << "\n" << x2 << " " << y2 <<"\n"<< x3 << " " << y3 << endl;
 				//cout << tmpd << endl;
 				for (int x = 0; x < height; x++) {
 					for (int y = 0; y < width; y++) {
@@ -133,19 +133,24 @@ void init(Frame*frames)
 
 int main()
 {
-	FILE* actfile = fopen("associate.txt", "r");
-	int picnums=10;
+	FILE* actfile = fopen("DATA/myact.txt", "r");
+	int picnums;
+	fscanf(actfile, "%d", &picnums);
 	Frame* frames = new Frame[picnums];
-	double s;
+	double fx,fy,cx,cy,s;
+	fscanf(actfile,"%lf%lf%lf%lf%lf", &fx, &fy, &cx, &cy, &s);
 	for (int i = 0; i < picnums; i++) {
 		char filename[100];
-		fscanf(actfile,"%lf", &s);
+		//fscanf(actfile,"%lf", &s);
 		fscanf(actfile,"%s", filename);
-		Camera*cam = new Camera(525, 525, 319.5, 239.5);
+		Camera*cam = new Camera(fx, fy, cx, cy);
 		fscanf(actfile,"%lf", &s);
 		cam->Read(actfile);
 		frames[i].cam = cam;
+		sprintf(filename, "DATA/test%04d.jpg", i);
 		frames[i].readimg(filename);
+		fscanf(actfile, "%lf,%lf,%lf,%lf", &s, &s, &s, &s);
+		fscanf(actfile, "%s", filename);
 	}
 	init(frames);
 }
