@@ -18,7 +18,7 @@ int src(int x, int y, int label)
 	return (x * img_width + y)*k + label;
 }
 
-void bp(double * &L_init,int* &result)
+void bp1(double * &L_init,int* &result)
 {
 	/*double *nL = new double[img_width*img_height*k];
 	double *x = L_init, *y = nL;
@@ -58,21 +58,74 @@ void bp(double * &L_init,int* &result)
 		result[i] = gc->whatLabel(i);
 }
 
+double L_init[1000][1000][20];
+double ux[1000][1000],u2[1000][1000],lamda[1000][1000];
+double be[1000][1000][20];
+double mess[2][1000][1000][20][4];
+double summess[2][1000][1000][20];
+
+double sqr(double x)
+{
+	return x * x;
+}
+
+double calsum(int x, int y, int x2, int y2, int iter, int d1, int d2,cv::Mat &frame,int dir)
+{
+	int It = frame.at<uchar>(x, y) - frame.at<uchar>(x2, y2);
+	double sum = L_init[x2][y2][d2] + abs(d1 - d2)*u2[x][y] / abs(It);
+	sum += summess[iter ^ 1][x2][y2][d2] - mess[iter ^ 1][x2][y2][d2][dir];
+	return sum;
+}
+
+void bp(cv::Mat &frame)
+{
+	int n = img_height, m = img_width;
+	int iter = 2;
+	for (int iter = 0; iter < 2; iter++) {
+		int ths=iter&1,las=(iter&1)^1;
+		printf("%d\n", iter);
+		for (int i = 1; i < n-1; i++) {
+			printf("%d\n", i);
+			for (int j = 1; j < m-1; j++) {
+				for (int d1 = 0; d1 < k; d1++) {
+					double sum1 = 1e5, sum2 = 1e5, sum3 = 1e5, sum4 = 1e5;
+					for (int d2 = 0; d2 < k; d2++) {
+						sum1 = min(calsum(i, j, i + 1, j, ths, d1, d2, frame, 0), sum1);
+						sum2 = min(calsum(i, j, i - 1, j, ths, d1, d2, frame, 1), sum2);
+						sum3 = min(calsum(i, j, i, j - 1, ths, d1, d2, frame, 2), sum3);
+						sum4 = min(calsum(i, j, i, j + 1, ths, d1, d2, frame, 3), sum4);
+					}
+					mess[ths][i][j][d1][0] = sum1;
+					mess[ths][i][j][d1][1] = sum2;
+					mess[ths][i][j][d1][2] = sum3;
+					mess[ths][i][j][d1][3] = sum4;
+					summess[ths][i][j][d1] = sum1 + sum2 + sum3 + sum4;
+					be[i][j][d1] = L_init[i][j][d1] + summess[ths][i][j][d1];
+				}
+			}
+		}
+	}
+	
+}
+
 void init(Frame*frames)
 {
 	int height =frames[0].height , width =frames[0].width;
 	cout << width << " " << height << endl;
 	img_width = width;
 	img_height = height;
-	double*L_init = new double[width*height*k];
-	for (int i = 0; i < width*height*k; i++) {
-		L_init[i] = 0;
+	for (int i = 0; i < height; i++) {
+		for (int j = 0; j < width; j++) {
+			ux[i][j] = 0;
+			for (int d = 0; d < k; d++) {
+				L_init[i][j][d] = 0;
+			}
+		}
 	}
 	cv::Mat trans=cv::Mat(height, width, CV_8UC1);
 	for (int i = 0; i <= 0; i++) {
 		cout << i << endl;
 		Frame *frame = &frames[i];
-		double ux = 1;
 		for (int d = 1; d <= k; d++) {
 			for (int j = 1; j < 5; j++) {
 				Frame *framet = &frames[j];
@@ -98,10 +151,8 @@ void init(Frame*frames)
 							tmp = abs(framet->gray_img.at<uchar>(tx, ty) - frame->gray_img.at<uchar>(x, y));
 							tmp = 1 / (1 + tmp * tmp);
 						}
-
-						L_init[src(x, y, d - 1)] += tmp;
-						if (L_init[src(x, y, d - 1)] > ux)
-							ux = L_init[src(x, y, d - 1)];
+						L_init[x][y][d - 1] += tmp;
+						ux[x][y] = max(ux[x][y], L_init[x][y][d - 1]);
 					}
 				}
 			}
@@ -109,26 +160,35 @@ void init(Frame*frames)
 			sprintf(file_name, "%d.bmp", d);
 			imwrite(file_name, trans);
 		}
-		ux = 100.0 / ux;
 		//printf("%lf\n", ux);
-		for (int x = 0; x < width*height*k; x++) {
-			L_init[x] = 100 - ux * L_init[x];
-			//cout << L_init[x]<<" ";
+		for (int i = 0; i < height; i++) {
+			for (int j = 0; j < width; j++) {
+				for (int d = 0; d < k; d++) {
+					L_init[i][j][d] = 1 - ux[i][j] * L_init[i][j][d];
+				}
+				double sumg = 0, sum = 0;
+				if (i > 0) sumg += 1, sum += 1/sqr(frame->gray_img.at<uchar>(i, j) - frame->gray_img.at<uchar>(i - 1, j));
+				if (j > 0) sumg += 1, sum += 1/sqr(frame->gray_img.at<uchar>(i, j) - frame->gray_img.at<uchar>(i, j-1));
+				if (i < height-1) sumg += 1, sum += 1/sqr(frame->gray_img.at<uchar>(i, j) - frame->gray_img.at<uchar>(i + 1, j));
+				if (j < width-1) sumg += 1, sum += 1/sqr(frame->gray_img.at<uchar>(i, j) - frame->gray_img.at<uchar>(i, j+1));
+				u2[i][j] = sumg / sum;
+			}
 		}
-		//cout << "bp begin\n" << endl;
-		int *res;
-		bp(L_init,res);
+		bp(frame->gray_img);
 		//cout << "bp done\n" << endl;
 		for (int x = 0; x < height; x++) {
-			//cout << x << endl;
 			for (int y = 0; y < width; y++) {
-				//if(mind!=0) cout << x << " " << y << " " << mind * delta << endl;
-				frame->dep_img.at<uchar>(x, y)= (res[x*width+y])*255/k;
+				int ans = 0;
+				for (int d = 1; d < k; d++) {
+					if (be[x][y][d] < be[x][y][ans]) {
+						ans = d;
+					}
+				}
+				frame->dep_img.at<uchar>(x, y)= ans*255/k;
 			}
 		}
 		cv::imwrite("dep.bmp",frame->dep_img);
 	}
-	delete L_init;
 }
 
 int main()
