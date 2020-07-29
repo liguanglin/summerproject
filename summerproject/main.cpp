@@ -57,7 +57,7 @@ void bp1(double * &L_init,int* &result)
 }
 
 double L_init[1000][1000][20];
-double ux[1000][1000],u2[1000][1000],lamda[1000][1000];
+double ux[1000][1000],u2[1000][1000];
 double be[1000][1000][20];
 double mess[2][1000][1000][20][4];
 double summess[2][1000][1000][20];
@@ -70,20 +70,23 @@ double sqr(double x)
 double calsum(int x, int y, int x2, int y2, int iter, int d1, int d2,cv::Mat &frame,int dir)
 {
 	int It = frame.at<uchar>(x, y) - frame.at<uchar>(x2, y2);
-	double sum = L_init[x2][y2][d2] + abs(d1 - d2)*u2[x][y] / abs(It);
+	double sum = L_init[x2][y2][d2] + abs(d1 - d2)*u2[x][y] / abs(It+1e-7);
 	sum += summess[iter ^ 1][x2][y2][d2] - mess[iter ^ 1][x2][y2][d2][dir];
 	return sum;
 }
 
 void bp(cv::Mat &frame)
 {
+	memset(be, 0, sizeof(be));
+	memset(summess, 0, sizeof(summess));
+	memset(mess, 0, sizeof(mess));
 	int n = img_height, m = img_width;
 	int iter = 2;
 	for (int iter = 0; iter < 2; iter++) {
 		int ths=iter&1,las=(iter&1)^1;
 		printf("%d\n", iter);
 		for (int i = 1; i < n-1; i++) {
-			printf("%d\n", i);
+			//printf("%d\n", i);
 			for (int j = 1; j < m-1; j++) {
 				for (int d1 = 0; d1 < k; d1++) {
 					double sum1 = 1e5, sum2 = 1e5, sum3 = 1e5, sum4 = 1e5;
@@ -98,7 +101,9 @@ void bp(cv::Mat &frame)
 					mess[ths][i][j][d1][2] = sum3;
 					mess[ths][i][j][d1][3] = sum4;
 					summess[ths][i][j][d1] = sum1 + sum2 + sum3 + sum4;
+					if(summess[ths][i][j][d1]>1e-5)printf("%lf\n", summess[ths][i][j][d1]);
 					be[i][j][d1] = L_init[i][j][d1] + summess[ths][i][j][d1];
+					
 				}
 			}
 		}
@@ -122,13 +127,13 @@ void init(Frame*frames)
 	}
 	cv::Mat trans=cv::Mat(height, width, CV_8UC1);
 	for (int i = 0; i <= 0; i++) {
-		cout << i << endl;
+		//cout << i << endl;
 		Frame *frame = &frames[i];
-		cout << frame->cam->R<<"???\n";
+		//cout << frame->cam->R<<"???\n";
 		for (int d = 1; d <= k; d++) {
 			for (int j = 1; j < 2; j++) {
 				Frame *framet = &frames[j];
-				cout << framet->cam->R << "???\n";
+				//cout << framet->cam->R << "???\n";
 				cv::Mat w_c0, w_c1, w_c2, w_c3;
 				double x0, y0, x1, y1, x2, y2, x3, y3,d0, d1, d2, d3;
 				frame->GetWorldCoordFrmImgCoord(0, 0, 1 / (d*delta), w_c0);
@@ -141,7 +146,11 @@ void init(Frame*frames)
 				framet->GetImgCoordFrmWorldCoord(x3, y3, d3, w_c3);
 				cout << x0 << " " << y0 << " \n" << x1 << " " << y1 << "\n" << x2 << " " << y2 <<"\n"<< x3 << " " << y3 << endl;
 				cout << d0 << " " << d1 << " " << d2 << " " << d3 << endl;
-				//cout << tmpd << endl;
+				double ax = (x1*d1 - x0 * d0) / height, bx = (x2*d2 - x0 * d0) / width;
+				double ay = (y1*d1 - y0 * d0) / height, by = (y2*d2 - y0 * d0) / width;
+				double ad = (d1 - d0) / height, bd = (d2 - d0) / width;
+				//cout << tmpd << endl;1
+				printf("----%lf %lf %lf %lf\n", ax, bx,ay,by);
 				for (int x = 0; x < height; x++) {
 					for (int y = 0; y < width; y++) {
 						trans.at<uchar>(x, y) = 0;
@@ -149,8 +158,16 @@ void init(Frame*frames)
 				}
 				for (int x = 0; x < 100; x++) {
 					for (int y = 0; y <100; y++) {
+						
 						double tmp = 0;
-						int tx = (int)(x0 + 1.0*x / height * (x1 - x0)+0.5), ty = (int)(y0 + 1.0*y / width * (y2 - y0)+0.5);
+						double td = (ad*x + bd * y + d0);
+						//printf("%d %d %lf\n", x, y, td);
+						int tx = (int)((ax*x + bx * y + x0*d0)/td+0.5);
+						int ty = (int)((ay*x + by * y + y0*d0)/td+0.5);
+						if (x == 20 && y == 24) {
+							printf("~~~%d %d\n", tx, ty);
+						}
+						//printf("%d %d %d %d\n", x, y, tx, ty);
 						if (tx >= 0 && tx < height&&ty >= 0 && ty < width) {
 							trans.at<uchar>(tx, ty) = frame->gray_img.at<uchar>(x, y);
 							tmp = abs(framet->gray_img.at<uchar>(tx, ty) - frame->gray_img.at<uchar>(x, y));
@@ -170,6 +187,7 @@ void init(Frame*frames)
 			for (int j = 0; j < width; j++) {
 				for (int d = 0; d < k; d++) {
 					L_init[i][j][d] = 1 - ux[i][j] * L_init[i][j][d];
+					if(i>=20&&i<40&&j>=20&&j<40&& L_init[i][j][d]!=0)printf("%d %d %d %lf\n", i, j, d, L_init[i][j][d]);
 				}
 				double sumg = 0, sum = 0;
 				if (i > 0) sumg += 1, sum += 1/sqr(frame->gray_img.at<uchar>(i, j) - frame->gray_img.at<uchar>(i - 1, j));
@@ -189,6 +207,7 @@ void init(Frame*frames)
 						ans = d;
 					}
 				}
+				if (ans != 0) printf("%d %d\n", x, y);
 				frame->dep_img.at<uchar>(x, y)= ans*255/k;
 			}
 		}
@@ -236,11 +255,10 @@ void makepic()
 			cv::Mat w_c;
 			fm2->out = 0;
 			fm1->GetWorldCoordFrmImgCoord(i, j, pic.at<uchar>(i, j),w_c);
-			if (j == 50 && i == 50) cout << w_c << endl, fm2->out = 1;
 			double a, b, c;
 			fm2->GetImgCoordFrmWorldCoord(a, b, c, w_c);
 			int x = a + (a>0?0.5:-0.5), y = b + (b > 0 ? 0.5 : -0.5), z = c + (c > 0 ? 0.5 : -0.5);
-			if (j == 50 && i == 50) cout << x << " " << y << " " << z << endl,system("pause");
+			if (i == 20 && j == 24) printf("???%d %d\n", x, y);
 			if (x >= 0 && x < 100 && y>=0 && y < 100) {
 				rpic.at<uchar>(x, y) = pic.at<uchar>(i, j);
 			}
