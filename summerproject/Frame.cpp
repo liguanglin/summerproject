@@ -11,13 +11,11 @@ void Frame::setimg(cv::Mat&img)
 }
 void Frame::readimg(char*file)
 {
-	cout << file << endl;
-	color_img = cv::imread(file);
-	std::cout << file << endl;
+	color_img = cv::imread(file,CV_8UC1);
 	width = color_img.cols;
 	height = color_img.rows;
 	gray_img = color_img.clone();
-	cvtColor(color_img,gray_img, CV_BGR2GRAY);
+	//cvtColor(color_img,gray_img, CV_BGR2GRAY);
 	dep_img = cv::Mat(color_img.size(), CV_8UC1);
 }
 void Frame::setcam(Camera*_cam)
@@ -32,7 +30,7 @@ void Frame::GetWorldCoordFrmImgCoord(int x, int y, double d, cv::Mat &w_c)
 	w_c.at<float>(1, 0) = y;
 	w_c.at<float>(2, 0) = 1;
 	//cout << "------------------------" << endl;
-	//cout << cam->in << endl;
+	//cout << w_c << endl;
 	w_c = d * cam->in.inv()*w_c;
 	//cout << w_c << endl;
 	//cout << cam->in.inv() << endl;
@@ -40,14 +38,15 @@ void Frame::GetWorldCoordFrmImgCoord(int x, int y, double d, cv::Mat &w_c)
 	//cout << w_c << endl;
 }
 
-void Frame::GetImgCoordFrmWorldCoord(float&x, float&y, float&d, cv::Mat w_c)
+void Frame::GetImgCoordFrmWorldCoord(double&x, double&y, double&d, cv::Mat w_c)
 {
 	cv::Mat res;
 	//cout << "++++++++++++++++++++++++" << endl;
+	//cout << w_c << endl;
 	res = cam->R*w_c + cam->T;
-	//cout << res << endl;
+	//if(out)cout << res << endl;
 	res = cam->in*res;
-	//cout << res << endl;
+	//if(out)cout << res << endl;
 	d = res.at<float>(2, 0);
 	x = res.at<float>(0, 0)/d;
 	y = res.at<float>(1, 0)/d;

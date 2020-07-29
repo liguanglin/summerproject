@@ -1,8 +1,6 @@
 #pragma once
 #include<core/core.hpp>
 #include<highgui/highgui.hpp>
-#include<Eigen\Dense>
-#include <opencv2/core/eigen.hpp>
 
 class Camera{
 public:

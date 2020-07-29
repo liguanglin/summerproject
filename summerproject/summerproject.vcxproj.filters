@@ -24,12 +24,6 @@
     <ClCompile Include="Camera.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="gco-v3.0-master\GCoptimization.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="gco-v3.0-master\LinkedBlockList.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Frame.h">

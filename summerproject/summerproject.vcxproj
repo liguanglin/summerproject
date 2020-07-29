@@ -137,8 +137,6 @@ opencv_videostab2413d.lib;%(AdditionalDependencies)</AdditionalDependencies>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Frame.cpp" />
-    <ClCompile Include="gco-v3.0-master\GCoptimization.cpp" />
-    <ClCompile Include="gco-v3.0-master\LinkedBlockList.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>

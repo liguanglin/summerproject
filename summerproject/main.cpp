@@ -3,15 +3,13 @@
 #include<highgui/highgui.hpp>  
 #include"Camera.h"
 #include"Frame.h"
-#include <Eigen\Dense>
-#include "GCoptimization.h"
 
 using namespace std;
 
 
 int img_width, img_height;
-double delta = 0.0001;
-int k = 10;
+double delta = 1.0/240;
+int k = 3;
 
 int src(int x, int y, int label)
 {
@@ -37,7 +35,7 @@ void bp1(double * &L_init,int* &result)
 		swap(x, y);
 	}
 	L_init = x;
-	delete y;*/
+	delete y;
 	int num_pixels = img_height * img_width;
 	result = new int[num_pixels];   // stores result of optimization
 	GCoptimizationGridGraph *gc = new GCoptimizationGridGraph(img_width, img_height, k);
@@ -55,7 +53,7 @@ void bp1(double * &L_init,int* &result)
 	gc->expansion(5);
 	cout << gc->compute_energy();
 	for (int i = 0; i < num_pixels; i++)
-		result[i] = gc->whatLabel(i);
+		result[i] = gc->whatLabel(i);*/
 }
 
 double L_init[1000][1000][20];
@@ -126,26 +124,33 @@ void init(Frame*frames)
 	for (int i = 0; i <= 0; i++) {
 		cout << i << endl;
 		Frame *frame = &frames[i];
+		cout << frame->cam->R<<"???\n";
 		for (int d = 1; d <= k; d++) {
-			for (int j = 1; j < 5; j++) {
+			for (int j = 1; j < 2; j++) {
 				Frame *framet = &frames[j];
+				cout << framet->cam->R << "???\n";
 				cv::Mat w_c0, w_c1, w_c2, w_c3;
-				float x0, y0, x1, y1, x2, y2, x3, y3, tmpd;
+				double x0, y0, x1, y1, x2, y2, x3, y3,d0, d1, d2, d3;
 				frame->GetWorldCoordFrmImgCoord(0, 0, 1 / (d*delta), w_c0);
 				frame->GetWorldCoordFrmImgCoord(height, 0, 1 / (d*delta), w_c1);
 				frame->GetWorldCoordFrmImgCoord(0, width, 1 / (d*delta), w_c2);
 				frame->GetWorldCoordFrmImgCoord(height, width, 1 / (d*delta), w_c3);
-				framet->GetImgCoordFrmWorldCoord(x0, y0, tmpd, w_c0);
-				framet->GetImgCoordFrmWorldCoord(x1, y1, tmpd, w_c1);
-				framet->GetImgCoordFrmWorldCoord(x2, y2, tmpd, w_c2);
-				framet->GetImgCoordFrmWorldCoord(x3, y3, tmpd, w_c3);
+				framet->GetImgCoordFrmWorldCoord(x0, y0, d0, w_c0);
+				framet->GetImgCoordFrmWorldCoord(x1, y1, d1, w_c1);
+				framet->GetImgCoordFrmWorldCoord(x2, y2, d2, w_c2);
+				framet->GetImgCoordFrmWorldCoord(x3, y3, d3, w_c3);
 				cout << x0 << " " << y0 << " \n" << x1 << " " << y1 << "\n" << x2 << " " << y2 <<"\n"<< x3 << " " << y3 << endl;
+				cout << d0 << " " << d1 << " " << d2 << " " << d3 << endl;
 				//cout << tmpd << endl;
 				for (int x = 0; x < height; x++) {
 					for (int y = 0; y < width; y++) {
+						trans.at<uchar>(x, y) = 0;
+					}
+				}
+				for (int x = 0; x < 100; x++) {
+					for (int y = 0; y <100; y++) {
 						double tmp = 0;
 						int tx = (int)(x0 + 1.0*x / height * (x1 - x0)+0.5), ty = (int)(y0 + 1.0*y / width * (y2 - y0)+0.5);
-						//std::cout << x << " " << y << " " << tx << " " << ty << endl;
 						if (tx >= 0 && tx < height&&ty >= 0 && ty < width) {
 							trans.at<uchar>(tx, ty) = frame->gray_img.at<uchar>(x, y);
 							tmp = abs(framet->gray_img.at<uchar>(tx, ty) - frame->gray_img.at<uchar>(x, y));
@@ -191,9 +196,64 @@ void init(Frame*frames)
 	}
 }
 
+void makepic()
+{
+	Camera * cam1 = new Camera(1, 1, 0, 0);
+	Camera * cam2 = new Camera(1, 1, 0, 0);
+	Frame *fm1 = new Frame();
+	Frame *fm2 = new Frame();
+	fm1->cam = cam1;
+	fm2->cam = cam2;
+	
+	FILE* fp = fopen("test.txt", "r");
+
+	cam1->Read(fp);
+	cam2->Read(fp);
+
+	cv::Mat pic(100, 100, CV_8UC1);
+	cv::Mat rpic(100, 100, CV_8UC1);
+	int n = 100, m = 100;
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < m; j++) {
+			pic.at<uchar>(i, j) = 240;
+			rpic.at<uchar>(i, j) = 240;
+		}
+	}
+	for (int i = 20; i < 40; i++) {
+		for (int j = 20; j < 40; j++) {
+			pic.at<uchar>(i, j) = 80;
+		}
+	}
+	for (int i = 70; i < 90; i++) {
+		for (int j = 70; j < 90; j++) {
+			pic.at<uchar>(i, j) = 160;
+		}
+	}
+	cv::imwrite("unrot.bmp", pic);
+	fm1->gray_img = pic;
+	for (int i = 0; i < 100; i++) {
+		for (int j = 0; j < 100; j++) {
+			cv::Mat w_c;
+			fm2->out = 0;
+			fm1->GetWorldCoordFrmImgCoord(i, j, pic.at<uchar>(i, j),w_c);
+			if (j == 50 && i == 50) cout << w_c << endl, fm2->out = 1;
+			double a, b, c;
+			fm2->GetImgCoordFrmWorldCoord(a, b, c, w_c);
+			int x = a + (a>0?0.5:-0.5), y = b + (b > 0 ? 0.5 : -0.5), z = c + (c > 0 ? 0.5 : -0.5);
+			if (j == 50 && i == 50) cout << x << " " << y << " " << z << endl,system("pause");
+			if (x >= 0 && x < 100 && y>=0 && y < 100) {
+				rpic.at<uchar>(x, y) = pic.at<uchar>(i, j);
+			}
+		}
+	}
+	cv::imwrite("rot.bmp", rpic);
+}
+
 int main()
 {
-	FILE* actfile = fopen("DATA/myact.txt", "r");
+	//makepic();
+	//return 0;
+	FILE* actfile = fopen("myact.txt", "r");
 	int picnums;
 	fscanf(actfile, "%d", &picnums);
 	Frame* frames = new Frame[picnums];
@@ -201,16 +261,16 @@ int main()
 	fscanf(actfile,"%lf%lf%lf%lf%lf", &fx, &fy, &cx, &cy, &s);
 	for (int i = 0; i < picnums; i++) {
 		char filename[100];
-		//fscanf(actfile,"%lf", &s);
 		fscanf(actfile,"%s", filename);
 		Camera*cam = new Camera(fx, fy, cx, cy);
 		fscanf(actfile,"%lf", &s);
 		cam->Read(actfile);
 		frames[i].cam = cam;
-		sprintf(filename, "DATA/test%04d.jpg", i);
+		sprintf(filename, "test%04d.bmp", i);
 		frames[i].readimg(filename);
 		fscanf(actfile, "%lf,%lf,%lf,%lf", &s, &s, &s, &s);
 		fscanf(actfile, "%s", filename);
 	}
 	init(frames);
+	system("pause");
 }
