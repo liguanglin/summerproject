@@ -3,21 +3,61 @@
 #include<highgui/highgui.hpp>  
 #include"Camera.h"
 #include"Frame.h"
+#include "GCoptimization.h"
 
 using namespace std;
 
 
 int img_width, img_height;
-double delta = 1.0/240;
-int k = 3;
+double delta = 0.001;
+int k = 10;
 
 int src(int x, int y, int label)
 {
 	return (x * img_width + y)*k + label;
 }
 
-void bp1(double * &L_init,int* &result)
+struct ForDataFn {
+	int numLab;
+	int *data;
+};
+
+int dataFn(int p, int l, void *data)
 {
+	
+	ForDataFn *myData = (ForDataFn *)data;
+	int numLab = myData->numLab;
+	return(myData->data[p*numLab + l]);
+}
+
+int smoothFn(int p1, int p2, int l1, int l2)
+{
+	if ((l1 - l2)*(l1 - l2) <= 100) return((l1 - l2)*(l1 - l2));
+	else return(100);
+}
+
+void gc(int * data,int* &result)
+{
+	try {
+		GCoptimizationGridGraph *gc = new GCoptimizationGridGraph(img_width, img_height, k);
+		ForDataFn toFn;
+		printf("%d\n", data[5174400]);
+		toFn.data = data;
+		toFn.numLab = k;
+		gc->setDataCost(&dataFn,&toFn);
+		gc->setSmoothCost(&smoothFn);
+		printf("\nBefore optimization energy is %lld", gc->compute_energy());
+		gc->expansion(2);// run expansion for 2 iterations. For swap use gc->swap(num_iterations);
+		printf("\nAfter optimization energy is %lld", gc->compute_energy());
+
+		for (int i = 0; i < img_width*img_height; i++)
+			result[i] = gc->whatLabel(i);
+		delete gc;
+	}
+	catch (GCException e) {
+		e.Report();
+		while (1);
+	}
 	/*double *nL = new double[img_width*img_height*k];
 	double *x = L_init, *y = nL;
 	int iter = 5;
@@ -101,14 +141,13 @@ void bp(cv::Mat &frame)
 					mess[ths][i][j][d1][2] = sum3;
 					mess[ths][i][j][d1][3] = sum4;
 					summess[ths][i][j][d1] = sum1 + sum2 + sum3 + sum4;
-					if(summess[ths][i][j][d1]>1e-5)printf("%lf\n", summess[ths][i][j][d1]);
+					//if(summess[ths][i][j][d1]>1e-5)printf("%lf\n", summess[ths][i][j][d1]);
 					be[i][j][d1] = L_init[i][j][d1] + summess[ths][i][j][d1];
 					
 				}
 			}
 		}
 	}
-	
 }
 
 void init(Frame*frames)
@@ -145,28 +184,28 @@ void init(Frame*frames)
 				framet->GetImgCoordFrmWorldCoord(x2, y2, d2, w_c2);
 				framet->GetImgCoordFrmWorldCoord(x3, y3, d3, w_c3);
 				cout << x0 << " " << y0 << " \n" << x1 << " " << y1 << "\n" << x2 << " " << y2 <<"\n"<< x3 << " " << y3 << endl;
-				cout << d0 << " " << d1 << " " << d2 << " " << d3 << endl;
+				//cout << d0 << " " << d1 << " " << d2 << " " << d3 << endl;
 				double ax = (x1*d1 - x0 * d0) / height, bx = (x2*d2 - x0 * d0) / width;
 				double ay = (y1*d1 - y0 * d0) / height, by = (y2*d2 - y0 * d0) / width;
 				double ad = (d1 - d0) / height, bd = (d2 - d0) / width;
 				//cout << tmpd << endl;1
-				printf("----%lf %lf %lf %lf\n", ax, bx,ay,by);
+				//printf("----%lf %lf %lf %lf\n", ax, bx,ay,by);
 				for (int x = 0; x < height; x++) {
 					for (int y = 0; y < width; y++) {
 						trans.at<uchar>(x, y) = 0;
 					}
 				}
-				for (int x = 0; x < 100; x++) {
-					for (int y = 0; y <100; y++) {
+				for (int x = 0; x < height; x++) {
+					for (int y = 0; y <width; y++) {
 						
 						double tmp = 0;
 						double td = (ad*x + bd * y + d0);
 						//printf("%d %d %lf\n", x, y, td);
 						int tx = (int)((ax*x + bx * y + x0*d0)/td+0.5);
 						int ty = (int)((ay*x + by * y + y0*d0)/td+0.5);
-						if (x == 20 && y == 24) {
-							printf("~~~%d %d\n", tx, ty);
-						}
+						//if (x == 20 && y == 24) {
+						//	printf("~~~%d %d\n", tx, ty);
+						//}
 						//printf("%d %d %d %d\n", x, y, tx, ty);
 						if (tx >= 0 && tx < height&&ty >= 0 && ty < width) {
 							trans.at<uchar>(tx, ty) = frame->gray_img.at<uchar>(x, y);
@@ -183,11 +222,18 @@ void init(Frame*frames)
 			imwrite(file_name, trans);
 		}
 		//printf("%lf\n", ux);
+		int *data = new int[width*height*k],*res= new int[width*height];
+		int tot = 0,sum=0;
 		for (int i = 0; i < height; i++) {
 			for (int j = 0; j < width; j++) {
 				for (int d = 0; d < k; d++) {
-					L_init[i][j][d] = 1 - ux[i][j] * L_init[i][j][d];
-					if(i>=20&&i<40&&j>=20&&j<40&& L_init[i][j][d]!=0)printf("%d %d %d %lf\n", i, j, d, L_init[i][j][d]);
+					if (ux[i][j] < 1e-8)
+						L_init[i][j][d] = 0;
+					else
+						L_init[i][j][d] = 1 - 1.0 / ux[i][j] * L_init[i][j][d];
+					data[tot++] = (int)(L_init[i][j][d] * 100);
+					sum += data[tot - 1];
+					//printf("!%d\n", data[tot - 1]);
 				}
 				double sumg = 0, sum = 0;
 				if (i > 0) sumg += 1, sum += 1/sqr(frame->gray_img.at<uchar>(i, j) - frame->gray_img.at<uchar>(i - 1, j));
@@ -197,18 +243,21 @@ void init(Frame*frames)
 				u2[i][j] = sumg / sum;
 			}
 		}
-		bp(frame->gray_img);
+		printf("%d %d %d\n",tot,sum,data[5174400]);
+		gc(data,res);
+		//bp(frame->gray_img);
 		//cout << "bp done\n" << endl;
+		tot = 0;
 		for (int x = 0; x < height; x++) {
 			for (int y = 0; y < width; y++) {
-				int ans = 0;
-				for (int d = 1; d < k; d++) {
-					if (be[x][y][d] < be[x][y][ans]) {
-						ans = d;
-					}
-				}
-				if (ans != 0) printf("%d %d\n", x, y);
-				frame->dep_img.at<uchar>(x, y)= ans*255/k;
+				//int ans = 0;
+				//for (int d = 1; d < k; d++) {
+				//	if (be[x][y][d] < be[x][y][ans]) {
+				//		ans = d;
+				//	}
+				//}
+				//if (ans != 0) printf("%d %d\n", x, y);
+				frame->dep_img.at<uchar>(x, y)= res[tot++]*255/k;
 			}
 		}
 		cv::imwrite("dep.bmp",frame->dep_img);
@@ -271,7 +320,7 @@ int main()
 {
 	//makepic();
 	//return 0;
-	FILE* actfile = fopen("myact.txt", "r");
+	FILE* actfile = fopen("DATA/myact.txt", "r");
 	int picnums;
 	fscanf(actfile, "%d", &picnums);
 	Frame* frames = new Frame[picnums];
@@ -284,7 +333,7 @@ int main()
 		fscanf(actfile,"%lf", &s);
 		cam->Read(actfile);
 		frames[i].cam = cam;
-		sprintf(filename, "test%04d.bmp", i);
+		sprintf(filename, "DATA/test%04d.jpg", i);
 		frames[i].readimg(filename);
 		fscanf(actfile, "%lf,%lf,%lf,%lf", &s, &s, &s, &s);
 		fscanf(actfile, "%s", filename);

@@ -77,6 +77,7 @@ void slist_prepend(T*& head, T* val)
 void GCException::Report() 
 {
 	printf("\n%s\n",message);
+	while (1);
 	exit(0);
 }
 
@@ -922,8 +923,9 @@ GCoptimization::EnergyType GCoptimization::giveDataEnergy()
 {
 	updateLabelingInfo();
 	EnergyType energy = 0;
-	for ( SiteID i = 0; i < m_num_sites; i++ )
+	for (SiteID i = 0; i < m_num_sites; i++) {
 		energy += m_labelingDataCosts[i];
+	}
 	return energy;
 }
 

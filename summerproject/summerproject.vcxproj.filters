@@ -24,6 +24,12 @@
     <ClCompile Include="Camera.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="gco-v3.0-master\GCoptimization.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="gco-v3.0-master\LinkedBlockList.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Frame.h">
@@ -32,20 +38,20 @@
     <ClInclude Include="Camera.h">
       <Filter>源文件</Filter>
     </ClInclude>
-    <ClInclude Include="gco-v3.0-master\block.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="gco-v3.0-master\energy.h">
-      <Filter>头文件</Filter>
+      <Filter>源文件</Filter>
     </ClInclude>
     <ClInclude Include="gco-v3.0-master\GCoptimization.h">
-      <Filter>头文件</Filter>
+      <Filter>源文件</Filter>
     </ClInclude>
     <ClInclude Include="gco-v3.0-master\graph.h">
-      <Filter>头文件</Filter>
+      <Filter>源文件</Filter>
     </ClInclude>
     <ClInclude Include="gco-v3.0-master\LinkedBlockList.h">
-      <Filter>头文件</Filter>
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="gco-v3.0-master\block.h">
+      <Filter>源文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -54,10 +60,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="gco-v3.0-master\graph.inl">
-      <Filter>头文件</Filter>
+      <Filter>源文件</Filter>
     </None>
     <None Include="gco-v3.0-master\maxflow.inl">
-      <Filter>头文件</Filter>
+      <Filter>源文件</Filter>
     </None>
   </ItemGroup>
 </Project>
