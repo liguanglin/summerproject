@@ -9,7 +9,7 @@ using namespace std;
 
 
 int img_width, img_height;
-double delta = 0.001;
+double delta = 0.002;
 int k = 10;
 
 int src(int x, int y, int label)
@@ -32,8 +32,7 @@ int dataFn(int p, int l, void *data)
 
 int smoothFn(int p1, int p2, int l1, int l2)
 {
-	if ((l1 - l2)*(l1 - l2) <= 100) return((l1 - l2)*(l1 - l2));
-	else return(100);
+	return((l1 - l2)*(l1 - l2)*5+10);
 }
 
 void gc(int * data,int* &result)
@@ -47,7 +46,7 @@ void gc(int * data,int* &result)
 		gc->setDataCost(&dataFn,&toFn);
 		gc->setSmoothCost(&smoothFn);
 		printf("\nBefore optimization energy is %lld", gc->compute_energy());
-		gc->expansion(2);// run expansion for 2 iterations. For swap use gc->swap(num_iterations);
+		gc->swap(3);// run expansion for 2 iterations. For swap use gc->swap(num_iterations);
 		printf("\nAfter optimization energy is %lld", gc->compute_energy());
 
 		for (int i = 0; i < img_width*img_height; i++)
@@ -170,24 +169,24 @@ void init(Frame*frames)
 		Frame *frame = &frames[i];
 		//cout << frame->cam->R<<"???\n";
 		for (int d = 1; d <= k; d++) {
-			for (int j = 1; j < 2; j++) {
+			for (int j = 1; j < 5; j++) {
 				Frame *framet = &frames[j];
 				//cout << framet->cam->R << "???\n";
 				cv::Mat w_c0, w_c1, w_c2, w_c3;
 				double x0, y0, x1, y1, x2, y2, x3, y3,d0, d1, d2, d3;
 				frame->GetWorldCoordFrmImgCoord(0, 0, 1 / (d*delta), w_c0);
-				frame->GetWorldCoordFrmImgCoord(height, 0, 1 / (d*delta), w_c1);
-				frame->GetWorldCoordFrmImgCoord(0, width, 1 / (d*delta), w_c2);
-				frame->GetWorldCoordFrmImgCoord(height, width, 1 / (d*delta), w_c3);
+				frame->GetWorldCoordFrmImgCoord(width, 0, 1 / (d*delta), w_c1);
+				frame->GetWorldCoordFrmImgCoord(0, height, 1 / (d*delta), w_c2);
+				frame->GetWorldCoordFrmImgCoord(width, height, 1 / (d*delta), w_c3);
 				framet->GetImgCoordFrmWorldCoord(x0, y0, d0, w_c0);
 				framet->GetImgCoordFrmWorldCoord(x1, y1, d1, w_c1);
 				framet->GetImgCoordFrmWorldCoord(x2, y2, d2, w_c2);
 				framet->GetImgCoordFrmWorldCoord(x3, y3, d3, w_c3);
 				cout << x0 << " " << y0 << " \n" << x1 << " " << y1 << "\n" << x2 << " " << y2 <<"\n"<< x3 << " " << y3 << endl;
 				//cout << d0 << " " << d1 << " " << d2 << " " << d3 << endl;
-				double ax = (x1*d1 - x0 * d0) / height, bx = (x2*d2 - x0 * d0) / width;
-				double ay = (y1*d1 - y0 * d0) / height, by = (y2*d2 - y0 * d0) / width;
-				double ad = (d1 - d0) / height, bd = (d2 - d0) / width;
+				double ax = (x1*d1 - x0 * d0) / width, bx = (x2*d2 - x0 * d0) / height;
+				double ay = (y1*d1 - y0 * d0) / width, by = (y2*d2 - y0 * d0) / height;
+				double ad = (d1 - d0) / width, bd = (d2 - d0) / height;
 				//cout << tmpd << endl;1
 				//printf("----%lf %lf %lf %lf\n", ax, bx,ay,by);
 				for (int x = 0; x < height; x++) {
@@ -199,10 +198,10 @@ void init(Frame*frames)
 					for (int y = 0; y <width; y++) {
 						
 						double tmp = 0;
-						double td = (ad*x + bd * y + d0);
+						double td = (ad*y + bd * x + d0);
 						//printf("%d %d %lf\n", x, y, td);
-						int tx = (int)((ax*x + bx * y + x0*d0)/td+0.5);
-						int ty = (int)((ay*x + by * y + y0*d0)/td+0.5);
+						int ty = (int)((ax*y + bx * x + x0*d0)/td+0.5);
+						int tx = (int)((ay*y + by * x + y0*d0)/td+0.5);
 						//if (x == 20 && y == 24) {
 						//	printf("~~~%d %d\n", tx, ty);
 						//}
@@ -216,10 +215,10 @@ void init(Frame*frames)
 						ux[x][y] = max(ux[x][y], L_init[x][y][d - 1]);
 					}
 				}
+				char file_name[20];
+				sprintf(file_name, "%d-%d.bmp",j, d);
+				imwrite(file_name, trans);
 			}
-			char file_name[20];
-			sprintf(file_name, "%d.bmp", d);
-			imwrite(file_name, trans);
 		}
 		//printf("%lf\n", ux);
 		int *data = new int[width*height*k],*res= new int[width*height];
@@ -243,7 +242,6 @@ void init(Frame*frames)
 				u2[i][j] = sumg / sum;
 			}
 		}
-		printf("%d %d %d\n",tot,sum,data[5174400]);
 		gc(data,res);
 		//bp(frame->gray_img);
 		//cout << "bp done\n" << endl;
