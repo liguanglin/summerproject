@@ -11,12 +11,12 @@ void Frame::setimg(cv::Mat&img)
 }
 void Frame::readimg(char*file)
 {
-	color_img = cv::imread(file,CV_8UC1);
+	color_img = cv::imread(file);
 	width = color_img.cols;
 	height = color_img.rows;
-	gray_img = color_img.clone();
-	//cvtColor(color_img,gray_img, CV_BGR2GRAY);
-	dep_img = cv::Mat(color_img.size(), CV_8UC1);
+	//gray_img = color_img.clone();
+	cvtColor(color_img,gray_img, CV_BGR2GRAY);
+	dep_img = cv::Mat(gray_img.size(), CV_8UC1);
 }
 void Frame::setcam(Camera*_cam)
 {

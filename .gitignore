@@ -2,5 +2,6 @@
 summerproject/DATA
 summerproject/rgb
 summerproject/rgbd_dataset_freiburg1_xyz
+summerproject/rgbd_dataset_freiburg1_teddy
 x64
 .vs/

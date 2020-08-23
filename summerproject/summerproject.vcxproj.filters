@@ -30,40 +30,38 @@
     <ClCompile Include="gco-v3.0-master\LinkedBlockList.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Frame.h">
+    <ClCompile Include="depth.cpp">
       <Filter>源文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Camera.h">
-      <Filter>源文件</Filter>
-    </ClInclude>
-    <ClInclude Include="gco-v3.0-master\energy.h">
-      <Filter>源文件</Filter>
-    </ClInclude>
-    <ClInclude Include="gco-v3.0-master\GCoptimization.h">
-      <Filter>源文件</Filter>
-    </ClInclude>
-    <ClInclude Include="gco-v3.0-master\graph.h">
-      <Filter>源文件</Filter>
-    </ClInclude>
-    <ClInclude Include="gco-v3.0-master\LinkedBlockList.h">
-      <Filter>源文件</Filter>
-    </ClInclude>
-    <ClInclude Include="gco-v3.0-master\block.h">
-      <Filter>源文件</Filter>
-    </ClInclude>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="gco-v3.0-master\CMakeLists.txt" />
     <Text Include="gco-v3.0-master\GCO_README.TXT" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="gco-v3.0-master\graph.inl">
-      <Filter>源文件</Filter>
-    </None>
-    <None Include="gco-v3.0-master\maxflow.inl">
-      <Filter>源文件</Filter>
-    </None>
+    <ClInclude Include="Frame.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="gco-v3.0-master\graph.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="gco-v3.0-master\energy.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="gco-v3.0-master\block.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="gco-v3.0-master\LinkedBlockList.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="gco-v3.0-master\GCoptimization.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="depth.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

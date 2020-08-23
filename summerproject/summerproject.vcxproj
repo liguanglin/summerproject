@@ -136,27 +136,25 @@ opencv_videostab2413d.lib;%(AdditionalDependencies)</AdditionalDependencies>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="depth.cpp" />
     <ClCompile Include="Frame.cpp" />
     <ClCompile Include="gco-v3.0-master\GCoptimization.cpp" />
     <ClCompile Include="gco-v3.0-master\LinkedBlockList.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="gco-v3.0-master\CMakeLists.txt" />
+    <Text Include="gco-v3.0-master\GCO_README.TXT" />
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="depth.h" />
     <ClInclude Include="Frame.h" />
     <ClInclude Include="gco-v3.0-master\block.h" />
     <ClInclude Include="gco-v3.0-master\energy.h" />
     <ClInclude Include="gco-v3.0-master\GCoptimization.h" />
     <ClInclude Include="gco-v3.0-master\graph.h" />
     <ClInclude Include="gco-v3.0-master\LinkedBlockList.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="gco-v3.0-master\CMakeLists.txt" />
-    <Text Include="gco-v3.0-master\GCO_README.TXT" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="gco-v3.0-master\graph.inl" />
-    <None Include="gco-v3.0-master\maxflow.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

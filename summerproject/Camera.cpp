@@ -27,5 +27,5 @@ void Camera::Read(FILE* file)
 			}
 		}
 	}
-	std::cout << R << std::endl << T << std::endl;
+	//std::cout << R << std::endl << T << std::endl;
 }
